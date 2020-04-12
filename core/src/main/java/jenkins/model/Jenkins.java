@@ -884,7 +884,6 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
             if (MissingClassTelemetry.enabled() && !(Thread.currentThread().getContextClassLoader() instanceof CatcherClassLoader)) {
                 Thread.currentThread().setContextClassLoader(new CatcherClassLoader(Thread.currentThread().getContextClassLoader()));
             }
-            final InitStrategy is = InitStrategy.get(Thread.currentThread().getContextClassLoader());
 
             Trigger.timer = new java.util.Timer("Jenkins cron thread");
             queue = new Queue(LoadBalancer.CONSISTENT_HASH);
@@ -919,8 +918,8 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
             ClassFilterImpl.register();
 
             // initialization consists of ...
-            executeReactor( is,
-                    pluginManager.initTasks(is),    // loading and preparing plugins
+            executeReactor( getInitStrategy(),
+                    pluginManager.initTasks(getInitStrategy()),    // loading and preparing plugins
                     loadTasks(),                    // load jobs
                     InitMilestone.ordering()        // forced ordering among key milestones
             );
@@ -954,6 +953,10 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
 
             STARTUP_MARKER_FILE.on();
         }
+    }
+
+    private InitStrategy getInitStrategy() throws IOException {
+        return InitStrategy.get(Thread.currentThread().getContextClassLoader());
     }
 
     private void checkInitStateComplete() {
